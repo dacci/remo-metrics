@@ -1,0 +1,36 @@
+service: remo-metrics
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+
+  iamRoleStatements:
+    - Effect: Allow
+      Action: ssm:GetParameter
+      Resource: arn:#{AWS::Partition}:ssm:#{AWS::Region}:#{AWS::AccountId}:parameter/${self:custom.token-param}
+    - Effect: Allow
+      Action: cloudwatch:PutMetricData
+      Resource: '*'
+
+plugins:
+  - serverless-pseudo-parameters
+
+functions:
+  main:
+    handler: index.handler
+    memorySize: 128
+
+    environment:
+      TOKEN_PARAM: ${self:custom.token-param}
+
+    events:
+      - schedule: rate(5 minutes)
+
+resources:
+  extensions:
+    MainLogGroup:
+      Properties:
+        RetentionInDays: 7
+
+custom:
+  token-param: ${opt:token-param, 'neture-remo-token'}
